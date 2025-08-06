@@ -1,0 +1,14 @@
+module github.com/Soliard/gophermart
+
+go 1.24.5
+
+require (
+	github.com/caarlos0/env/v6 v6.10.1 // indirect
+	github.com/go-chi/chi v1.5.5 // indirect
+	github.com/go-chi/chi/v5 v5.2.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
+)
