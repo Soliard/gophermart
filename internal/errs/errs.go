@@ -1,0 +1,13 @@
+package errs
+
+import "errors"
+
+var (
+	UserNotFound         = errors.New("User not found")
+	LoginAlreadyExists   = errors.New("Login already exists")
+	WrongLoginOrPassword = errors.New("Wrong login or password")
+	TokenExpired         = errors.New("JWT expired")
+	TokenNotFound        = errors.New("Token not found in headers")
+	TokenInvalid         = errors.New("Invalid token")
+	EmptyContextUser     = errors.New("User info not found in context")
+)
