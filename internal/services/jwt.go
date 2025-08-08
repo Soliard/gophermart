@@ -22,8 +22,7 @@ type jwtService struct {
 }
 
 type UserContext struct {
-	ID    string        `json:"id"`
-	Roles []models.Role `json:"roles"`
+	ID string `json:"id"`
 }
 
 type claims struct {
@@ -43,7 +42,7 @@ func (s *jwtService) GenerateToken(u *models.User) (string, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpires)),
 		},
-		User: UserContext{ID: u.ID, Roles: u.Roles},
+		User: UserContext{ID: u.ID},
 	})
 
 	tokenString, err := token.SignedString([]byte(s.tokenSecret))
