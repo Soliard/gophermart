@@ -25,7 +25,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
 	if req.Header.Get("Content-Type") != "application/json" {
-		http.Error(res, "Only application/json is allowed", http.StatusBadRequest)
+		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
 

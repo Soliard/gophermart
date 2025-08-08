@@ -11,3 +11,8 @@ type UserRepositoryInterface interface {
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
 	UserExists(ctx context.Context, login string) (bool, error)
 }
+
+type OrderRepositoryInterface interface {
+	Create(ctx context.Context, order *models.Order) error
+	GetByNumber(ctx context.Context, number string) (*models.Order, error)
+}

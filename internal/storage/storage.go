@@ -8,7 +8,8 @@ import (
 )
 
 type Storage struct {
-	UserRepository UserRepositoryInterface
+	UserRepository  UserRepositoryInterface
+	OrderRepository OrderRepositoryInterface
 }
 
 func New(ctx context.Context, c *config.Config) (*Storage, error) {
@@ -17,6 +18,7 @@ func New(ctx context.Context, c *config.Config) (*Storage, error) {
 
 func newMemoryStorage() (*Storage, error) {
 	return &Storage{
-		UserRepository: memory.NewUserRepository(),
+		UserRepository:  memory.NewUserRepository(),
+		OrderRepository: memory.NewOrderRepository(),
 	}, nil
 }

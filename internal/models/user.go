@@ -17,9 +17,9 @@ type User struct {
 	ID           string     `json:"id"`
 	Login        string     `json:"login"`
 	PasswordHash string     `json:"-"`
-	CreatedAt    time.Time  `json:"createdAt"`
+	CreatedAt    time.Time  `json:"created_at"`
 	Roles        []Role     `json:"roles"`
-	LastLoginAt  *time.Time `json:"lastLoginAt"`
+	LastLoginAt  *time.Time `json:"last_login_at"`
 }
 
 func NewUser(login, passwordHash string) *User {

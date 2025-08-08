@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/phedde/luhn-algorithm v0.0.0-20241101133237-e52d92f74c0d // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
