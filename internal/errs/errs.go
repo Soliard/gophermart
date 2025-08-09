@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	UserNotFound                    = errors.New("User not found")
+	EmptyLoginOrPassword            = errors.New("Login or password is empty")
 	LoginAlreadyExists              = errors.New("Login already exists")
 	WrongLoginOrPassword            = errors.New("Wrong login or password")
 	TokenExpired                    = errors.New("JWT expired")
