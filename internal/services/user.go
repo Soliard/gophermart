@@ -24,6 +24,10 @@ func NewUserService(userRepo storage.UserRepositoryInterface, jwtService JWTServ
 }
 
 func (s *userService) Register(ctx context.Context, req *dto.RegisterRequest) (*models.User, error) {
+	if req.Login == "" || req.Password == "" {
+		return nil, errs.EmptyLoginOrPassword
+	}
+
 	exists, err := s.UserRepository.UserExists(ctx, req.Login)
 	if err != nil {
 		return nil, err

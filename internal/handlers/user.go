@@ -36,15 +36,15 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
 		return
 	}
-	if regData.Login == "" || regData.Password == "" {
-		http.Error(res, "Login and password must be not empty", http.StatusBadRequest)
-		return
-	}
 
 	u, err := h.userService.Register(ctx, regData)
 	if err != nil {
 		if errors.Is(err, errs.LoginAlreadyExists) {
 			http.Error(res, "User with this login already exists", http.StatusConflict)
+			return
+		}
+		if errors.Is(err, errs.EmptyLoginOrPassword) {
+			http.Error(res, "Login and password must be not empty", http.StatusBadRequest)
 			return
 		}
 		log.Error("Failed to register user", logger.F.Error(err))

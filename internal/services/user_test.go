@@ -13,6 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func setupUserService() (UserServiceInterface, storage.UserRepositoryInterface) {
+	repo := memory.NewUserRepository()
+	jwt := NewJWTService("secret", time.Hour)
+	service := NewUserService(repo, jwt)
+	return service, repo
+}
+
 func Test_userService_Register(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -89,17 +96,12 @@ func Test_userService_Register(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Создаем чистые объекты для каждого теста
-			userRepo := memory.NewUserRepository()
-			jwtService := NewJWTService("test-secret", time.Hour)
+			s, userRepo := setupUserService()
 
 			// Подготавливаем данные
 			if tt.setup.prep != nil {
 				tt.setup.prep(userRepo)
 			}
-
-			// Создаем сервис
-			s := NewUserService(userRepo, jwtService)
 
 			// Выполняем тест
 			got, err := s.Register(tt.args.ctx, tt.args.req)
@@ -129,4 +131,185 @@ func Test_userService_Register(t *testing.T) {
 			}
 		})
 	}
+}
+func Test_userService_Login(t *testing.T) {
+	service, userRepo := setupUserService()
+	type args struct {
+		ctx context.Context
+		req *dto.LoginRequest
+	}
+
+	type setup struct {
+		name string
+		prep func(storage.UserRepositoryInterface) // подготовка данных
+	}
+
+	tests := []struct {
+		name      string
+		setup     setup
+		args      args
+		wantToken bool  // ожидаем ли токен
+		wantErr   error // конкретная ошибка
+	}{
+		{
+			name: "successful login",
+			setup: setup{
+				name: "user exists with correct password",
+				prep: func(repo storage.UserRepositoryInterface) {
+					// Создаем пользователя с известным паролем
+					// Используем Register для корректного хэширования
+					service.Register(context.Background(), &dto.RegisterRequest{
+						Login:    "testuser",
+						Password: "password123",
+					})
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Login:    "testuser",
+					Password: "password123",
+				},
+			},
+			wantToken: true,
+			wantErr:   nil,
+		},
+		{
+			name: "user not found",
+			setup: setup{
+				name: "empty repository",
+				prep: func(repo storage.UserRepositoryInterface) {
+					// пустой репозиторий
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Login:    "nonexistent",
+					Password: "password123",
+				},
+			},
+			wantToken: false,
+			wantErr:   errs.WrongLoginOrPassword,
+		},
+		{
+			name: "wrong password",
+			setup: setup{
+				name: "user exists with different password",
+				prep: func(repo storage.UserRepositoryInterface) {
+					// Создаем пользователя с одним паролем
+					service, _ := setupUserService()
+					service.Register(context.Background(), &dto.RegisterRequest{
+						Login:    "testuser",
+						Password: "correctpassword",
+					})
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Login:    "testuser",
+					Password: "wrongpassword",
+				},
+			},
+			wantToken: false,
+			wantErr:   errs.WrongLoginOrPassword,
+		},
+		{
+			name: "empty login",
+			setup: setup{
+				name: "empty repository",
+				prep: func(repo storage.UserRepositoryInterface) {},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Login:    "",
+					Password: "password123",
+				},
+			},
+			wantToken: false,
+			wantErr:   errs.WrongLoginOrPassword, // пустой логин не найдется
+		},
+		{
+			name: "empty password",
+			setup: setup{
+				name: "user exists",
+				prep: func(repo storage.UserRepositoryInterface) {
+					service, _ := setupUserService()
+					service.Register(context.Background(), &dto.RegisterRequest{
+						Login:    "testuser",
+						Password: "password123",
+					})
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &dto.LoginRequest{
+					Login:    "testuser",
+					Password: "",
+				},
+			},
+			wantToken: false,
+			wantErr:   errs.WrongLoginOrPassword, // пустой пароль не совпадет с хэшем
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Подготавливаем данные
+			if tt.setup.prep != nil {
+				tt.setup.prep(userRepo)
+			}
+
+			// Выполняем тест
+			token, err := service.Login(tt.args.ctx, tt.args.req)
+
+			// Проверяем ошибку
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.wantErr, err)
+				assert.Empty(t, token)
+				return
+			}
+
+			assert.NoError(t, err)
+
+			// Проверяем результат
+			if tt.wantToken {
+				assert.NotEmpty(t, token)
+				// проверить валидность токена?
+			} else {
+				assert.Empty(t, token)
+			}
+		})
+	}
+}
+func Test_userService_RegisterAndLogin_Integration(t *testing.T) {
+	s, _ := setupUserService()
+
+	// 1. Регистрируем пользователя
+	user, err := s.Register(context.Background(), &dto.RegisterRequest{
+		Login:    "integrationuser",
+		Password: "testpassword123",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
+
+	// 2. Логинимся с теми же credentials
+	token, err := s.Login(context.Background(), &dto.LoginRequest{
+		Login:    "integrationuser",
+		Password: "testpassword123",
+	})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	// 3. Пытаемся залогиниться с неправильным паролем
+	_, err = s.Login(context.Background(), &dto.LoginRequest{
+		Login:    "integrationuser",
+		Password: "wrongpassword",
+	})
+	assert.Error(t, err)
+	assert.Equal(t, errs.WrongLoginOrPassword, err)
 }
