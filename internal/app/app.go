@@ -6,6 +6,7 @@ import (
 	"github.com/Soliard/gophermart/internal/config"
 	"github.com/Soliard/gophermart/internal/handlers"
 	"github.com/Soliard/gophermart/internal/middlewares"
+	"github.com/Soliard/gophermart/internal/models"
 	"github.com/Soliard/gophermart/internal/services"
 	"github.com/Soliard/gophermart/internal/storage"
 	"github.com/go-chi/chi"
@@ -38,9 +39,15 @@ func (a *App) Router() *chi.Mux {
 	r.Post("/api/user/register", a.Handlers.User.Register)
 	r.Post("/api/user/login", a.Handlers.User.Login)
 
-	// Защищенные роуты
+	// Защещенные роуты
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.Authentication(a.Services.JWT))
+
+		// Роуты юзеров
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.Authorization(models.RoleUser))
+			r.Post("/api/user/orders", a.Handlers.Order.UploadOrder)
+		})
 
 	})
 
