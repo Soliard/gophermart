@@ -4,21 +4,10 @@ import (
 	"context"
 
 	"github.com/Soliard/gophermart/internal/config"
-	"github.com/Soliard/gophermart/internal/storage/memory"
+	"github.com/Soliard/gophermart/internal/repository"
+	"github.com/Soliard/gophermart/internal/storage/postgr"
 )
 
-type Storage struct {
-	UserRepository  UserRepositoryInterface
-	OrderRepository OrderRepositoryInterface
-}
-
-func New(ctx context.Context, c *config.Config) (*Storage, error) {
-	return newMemoryStorage()
-}
-
-func newMemoryStorage() (*Storage, error) {
-	return &Storage{
-		UserRepository:  memory.NewUserRepository(),
-		OrderRepository: memory.NewOrderRepository(),
-	}, nil
+func New(ctx context.Context, c *config.Config) (repository.Storage, error) {
+	return postgr.NewPostgresStorage(ctx, c.DatabaseDSN)
 }

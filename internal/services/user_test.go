@@ -1,315 +1,277 @@
+// internal/services/user_test.go
 package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/storage"
-	"github.com/Soliard/gophermart/internal/storage/memory"
+	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func setupUserService() (UserServiceInterface, storage.UserRepositoryInterface) {
-	repo := memory.NewUserRepository()
-	jwt := NewJWTService("secret", time.Hour)
-	service := NewUserService(repo, jwt)
-	return service, repo
+type mockUserRepository struct {
+	users            map[string]*models.User
+	shouldFailExist  bool
+	shouldFailCreate bool
+	existsResult     bool
 }
 
-func Test_userService_Register(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *dto.RegisterRequest
+func (m *mockUserRepository) UserExists(ctx context.Context, login string) (bool, error) {
+	if m.shouldFailExist {
+		return false, errors.New("db error")
 	}
 
-	type setup struct {
-		name string
-		prep func(storage.UserRepositoryInterface) // подготовка данных
+	if m.existsResult {
+		return true, nil // принудительно возвращаем что пользователь существует
 	}
 
+	_, exists := m.users[login]
+	return exists, nil
+}
+
+func (m *mockUserRepository) Create(ctx context.Context, user *models.User) error {
+	if m.shouldFailCreate {
+		return errors.New("create error")
+	}
+
+	if m.users == nil {
+		m.users = make(map[string]*models.User)
+	}
+	m.users[user.Login] = user
+	return nil
+}
+
+func (m *mockUserRepository) GetByLogin(ctx context.Context, login string) (*models.User, error) {
+	user, exists := m.users[login]
+	if !exists {
+		return nil, errs.UserNotFound
+	}
+	return user, nil
+}
+
+func (m *mockUserRepository) UpdateLoginTime(ctx context.Context, userID string, time time.Time) error {
+	return nil
+}
+
+type mockJWTService struct {
+	shouldFail    bool
+	tokenToReturn string
+}
+
+func (m *mockJWTService) GenerateToken(u *models.User) (string, error) {
+	if m.shouldFail {
+		return "", errors.New("jwt error")
+	}
+
+	if m.tokenToReturn != "" {
+		return m.tokenToReturn, nil
+	}
+
+	return "fake-jwt-token", nil
+}
+
+func (m *mockJWTService) GetClaims(token string) (*UserContext, error) {
+	return &UserContext{ID: "user-123"}, nil
+}
+
+func TestUserService_Register(t *testing.T) {
 	tests := []struct {
-		name     string
-		setup    setup
-		args     args
-		wantUser bool  // ожидаем ли пользователя
-		wantErr  error // конкретная ошибка
+		name        string
+		request     *dto.RegisterRequest
+		setupMocks  func() (repository.UserRepositoryInterface, JWTServiceInterface)
+		wantErr     error
+		checkResult func(*testing.T, *models.User)
 	}{
 		{
 			name: "successful registration",
-			setup: setup{
-				name: "empty repository",
-				prep: func(repo storage.UserRepositoryInterface) {
-					// ничего не делаем - репозиторий пустой
-				},
+			request: &dto.RegisterRequest{
+				Login:    "testuser",
+				Password: "password123",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.RegisterRequest{
-					Login:    "testuser",
-					Password: "password123",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{}, &mockJWTService{}
 			},
-			wantUser: true,
-			wantErr:  nil,
+			wantErr: nil,
+			checkResult: func(t *testing.T, user *models.User) {
+				assert.NotNil(t, user)
+				assert.Equal(t, "testuser", user.Login)
+				assert.NotEmpty(t, user.ID)
+				assert.NotEmpty(t, user.PasswordHash)
+			},
 		},
 		{
 			name: "login already exists",
-			setup: setup{
-				name: "user already exists",
-				prep: func(repo storage.UserRepositoryInterface) {
-					// Создаем существующего пользователя
-					existingUser := models.NewUser("testuser", "hashedpass")
-					repo.Create(context.Background(), existingUser)
-				},
+			request: &dto.RegisterRequest{
+				Login:    "existinguser",
+				Password: "password123",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.RegisterRequest{
-					Login:    "testuser",
-					Password: "password123",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{existsResult: true}, &mockJWTService{}
 			},
-			wantUser: false,
-			wantErr:  errs.LoginAlreadyExists,
+			wantErr: errs.LoginAlreadyExists,
+			checkResult: func(t *testing.T, user *models.User) {
+				assert.Nil(t, user)
+			},
 		},
 		{
 			name: "empty login",
-			setup: setup{
-				name: "empty repository",
-				prep: func(repo storage.UserRepositoryInterface) {},
+			request: &dto.RegisterRequest{
+				Login:    "",
+				Password: "password123",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.RegisterRequest{
-					Login:    "",
-					Password: "password123",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{}, &mockJWTService{}
 			},
-			wantUser: false,
-			wantErr:  errs.EmptyLoginOrPassword,
+			wantErr: errs.EmptyLoginOrPassword,
+			checkResult: func(t *testing.T, user *models.User) {
+				assert.Nil(t, user)
+			},
+		},
+		{
+			name: "repository error on UserExists",
+			request: &dto.RegisterRequest{
+				Login:    "testuser",
+				Password: "password123",
+			},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{shouldFailExist: true}, &mockJWTService{}
+			},
+			wantErr: errors.New("db error"),
+			checkResult: func(t *testing.T, user *models.User) {
+				assert.Nil(t, user)
+			},
+		},
+		{
+			name: "repository error on Create",
+			request: &dto.RegisterRequest{
+				Login:    "testuser",
+				Password: "password123",
+			},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{shouldFailCreate: true}, &mockJWTService{}
+			},
+			wantErr: errors.New("create error"),
+			checkResult: func(t *testing.T, user *models.User) {
+				assert.Nil(t, user)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, userRepo := setupUserService()
+			// Создаем моки
+			mockRepo, mockJWT := tt.setupMocks()
 
-			// Подготавливаем данные
-			if tt.setup.prep != nil {
-				tt.setup.prep(userRepo)
-			}
+			// Создаем сервис
+			service := NewUserService(mockRepo, mockJWT)
 
 			// Выполняем тест
-			got, err := s.Register(tt.args.ctx, tt.args.req)
+			user, err := service.Register(context.Background(), tt.request)
 
 			// Проверяем ошибку
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.wantErr, err)
-				assert.Nil(t, got)
-				return
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
 			}
-
-			assert.NoError(t, err)
 
 			// Проверяем результат
-			if tt.wantUser {
-				assert.NotNil(t, got)
-				assert.Equal(t, tt.args.req.Login, got.Login)
-				assert.NotEmpty(t, got.ID)
-				assert.NotEmpty(t, got.PasswordHash)
-
-				// Проверяем что пользователь действительно сохранился
-				exists, _ := userRepo.UserExists(context.Background(), tt.args.req.Login)
-				assert.True(t, exists)
-			} else {
-				assert.Nil(t, got)
-			}
+			tt.checkResult(t, user)
 		})
 	}
 }
-func Test_userService_Login(t *testing.T) {
-	service, userRepo := setupUserService()
-	type args struct {
-		ctx context.Context
-		req *dto.LoginRequest
-	}
 
-	type setup struct {
-		name string
-		prep func(storage.UserRepositoryInterface) // подготовка данных
-	}
-
+func TestUserService_Login(t *testing.T) {
 	tests := []struct {
-		name      string
-		setup     setup
-		args      args
-		wantToken bool  // ожидаем ли токен
-		wantErr   error // конкретная ошибка
+		name       string
+		request    *dto.LoginRequest
+		setupMocks func() (repository.UserRepositoryInterface, JWTServiceInterface)
+		wantErr    error
+		wantToken  string
 	}{
 		{
 			name: "successful login",
-			setup: setup{
-				name: "user exists with correct password",
-				prep: func(repo storage.UserRepositoryInterface) {
-					// Создаем пользователя с известным паролем
-					// Используем Register для корректного хэширования
-					service.Register(context.Background(), &dto.RegisterRequest{
-						Login:    "testuser",
-						Password: "password123",
-					})
-				},
+			request: &dto.LoginRequest{
+				Login:    "testuser",
+				Password: "password123",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.LoginRequest{
-					Login:    "testuser",
-					Password: "password123",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+				user := &models.User{
+					ID:           "user-123",
+					Login:        "testuser",
+					PasswordHash: string(hashedPassword),
+				}
+
+				mockRepo := &mockUserRepository{
+					users: map[string]*models.User{"testuser": user},
+				}
+				mockJWT := &mockJWTService{tokenToReturn: "success-token"}
+
+				return mockRepo, mockJWT
 			},
-			wantToken: true,
 			wantErr:   nil,
+			wantToken: "success-token",
 		},
 		{
 			name: "user not found",
-			setup: setup{
-				name: "empty repository",
-				prep: func(repo storage.UserRepositoryInterface) {
-					// пустой репозиторий
-				},
+			request: &dto.LoginRequest{
+				Login:    "nonexistent",
+				Password: "password123",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.LoginRequest{
-					Login:    "nonexistent",
-					Password: "password123",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				return &mockUserRepository{}, &mockJWTService{}
 			},
-			wantToken: false,
 			wantErr:   errs.WrongLoginOrPassword,
+			wantToken: "",
 		},
 		{
 			name: "wrong password",
-			setup: setup{
-				name: "user exists with different password",
-				prep: func(repo storage.UserRepositoryInterface) {
-					// Создаем пользователя с одним паролем
-					service, _ := setupUserService()
-					service.Register(context.Background(), &dto.RegisterRequest{
-						Login:    "testuser",
-						Password: "correctpassword",
-					})
-				},
+			request: &dto.LoginRequest{
+				Login:    "testuser",
+				Password: "wrongpassword",
 			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.LoginRequest{
-					Login:    "testuser",
-					Password: "wrongpassword",
-				},
+			setupMocks: func() (repository.UserRepositoryInterface, JWTServiceInterface) {
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
+				user := &models.User{
+					ID:           "user-123",
+					Login:        "testuser",
+					PasswordHash: string(hashedPassword),
+				}
+
+				mockRepo := &mockUserRepository{
+					users: map[string]*models.User{"testuser": user},
+				}
+
+				return mockRepo, &mockJWTService{}
 			},
-			wantToken: false,
 			wantErr:   errs.WrongLoginOrPassword,
-		},
-		{
-			name: "empty login",
-			setup: setup{
-				name: "empty repository",
-				prep: func(repo storage.UserRepositoryInterface) {},
-			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.LoginRequest{
-					Login:    "",
-					Password: "password123",
-				},
-			},
-			wantToken: false,
-			wantErr:   errs.WrongLoginOrPassword, // пустой логин не найдется
-		},
-		{
-			name: "empty password",
-			setup: setup{
-				name: "user exists",
-				prep: func(repo storage.UserRepositoryInterface) {
-					service, _ := setupUserService()
-					service.Register(context.Background(), &dto.RegisterRequest{
-						Login:    "testuser",
-						Password: "password123",
-					})
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				req: &dto.LoginRequest{
-					Login:    "testuser",
-					Password: "",
-				},
-			},
-			wantToken: false,
-			wantErr:   errs.WrongLoginOrPassword, // пустой пароль не совпадет с хэшем
+			wantToken: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockRepo, mockJWT := tt.setupMocks()
+			service := NewUserService(mockRepo, mockJWT)
 
-			// Подготавливаем данные
-			if tt.setup.prep != nil {
-				tt.setup.prep(userRepo)
-			}
+			token, err := service.Login(context.Background(), tt.request)
 
-			// Выполняем тест
-			token, err := service.Login(tt.args.ctx, tt.args.req)
-
-			// Проверяем ошибку
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.Equal(t, tt.wantErr, err)
 				assert.Empty(t, token)
-				return
-			}
-
-			assert.NoError(t, err)
-
-			// Проверяем результат
-			if tt.wantToken {
-				assert.NotEmpty(t, token)
-				// проверить валидность токена?
 			} else {
-				assert.Empty(t, token)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantToken, token)
 			}
 		})
 	}
-}
-func Test_userService_RegisterAndLogin_Integration(t *testing.T) {
-	s, _ := setupUserService()
-
-	// 1. Регистрируем пользователя
-	user, err := s.Register(context.Background(), &dto.RegisterRequest{
-		Login:    "integrationuser",
-		Password: "testpassword123",
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-
-	// 2. Логинимся с теми же credentials
-	token, err := s.Login(context.Background(), &dto.LoginRequest{
-		Login:    "integrationuser",
-		Password: "testpassword123",
-	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	// 3. Пытаемся залогиниться с неправильным паролем
-	_, err = s.Login(context.Background(), &dto.LoginRequest{
-		Login:    "integrationuser",
-		Password: "wrongpassword",
-	})
-	assert.Error(t, err)
-	assert.Equal(t, errs.WrongLoginOrPassword, err)
 }

@@ -34,7 +34,7 @@ func Authorization(allowedRoles ...models.Role) func(next http.Handler) http.Han
 	}
 }
 
-func hasAnyAllowedRole(userRoles []models.Role, required []models.Role) bool {
+func hasAnyAllowedRole(userRoles models.Roles, required models.Roles) bool {
 	for _, requiredRole := range required {
 		if slices.Contains(userRoles, requiredRole) {
 			return true

@@ -13,7 +13,7 @@ type OrderRepository struct {
 	Orders Orders
 }
 
-func NewOrderRepository() *OrderRepository {
+func newOrderRepository() *OrderRepository {
 	return &OrderRepository{
 		Orders: Orders{},
 	}
@@ -30,5 +30,4 @@ func (r *OrderRepository) GetByNumber(ctx context.Context, number string) (*mode
 		return order, nil
 	}
 	return nil, errs.OrderNotFound
-
 }

@@ -7,15 +7,15 @@ import (
 
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/storage"
+	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/phedde/luhn-algorithm"
 )
 
 type orderService struct {
-	OrderRepository storage.OrderRepositoryInterface
+	OrderRepository repository.OrderRepositoryInterface
 }
 
-func NewOrderService(orderRepository storage.OrderRepositoryInterface) *orderService {
+func NewOrderService(orderRepository repository.OrderRepositoryInterface) *orderService {
 	return &orderService{
 		OrderRepository: orderRepository,
 	}

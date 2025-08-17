@@ -14,11 +14,11 @@ var (
 type OrderStatus string
 
 type Order struct {
-	Number     string      `json:"number"`
-	UserID     string      `json:"-"`
-	Status     OrderStatus `json:"status"`
-	Accrual    *float64    `json:"accrual,omitempty"`
-	UploadedAt time.Time   `json:"uploaded_at"`
+	Number     string      `json:"number" db:"number"`
+	UserID     string      `json:"-" db:"user_id"`
+	Status     OrderStatus `json:"status" db:"status"`
+	Accrual    *float64    `json:"accrual,omitempty" db:"accrual"`
+	UploadedAt time.Time   `json:"uploaded_at" db:"uploaded_at"`
 }
 
 func NewOrder(number, userID string) *Order {
@@ -27,6 +27,6 @@ func NewOrder(number, userID string) *Order {
 		UserID:     userID,
 		Status:     StatusNew,
 		Accrual:    nil,
-		UploadedAt: time.Now(),
+		UploadedAt: time.Now().UTC(),
 	}
 }

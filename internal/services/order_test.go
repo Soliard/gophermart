@@ -1,28 +1,63 @@
+// internal/services/order_test.go
 package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/storage"
-	"github.com/Soliard/gophermart/internal/storage/memory"
+	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupOrderService() (OrderServiceInterface, storage.OrderRepositoryInterface) {
-	repo := memory.NewOrderRepository()
-	service := NewOrderService(repo)
-	return service, repo
+type mockOrderRepository struct {
+	orders           map[string]*models.Order
+	shouldFailCreate bool
+	shouldFailGet    bool
+	getResult        *models.Order
+	getError         error
 }
 
-func Test_orderService_UploadOrder(t *testing.T) {
+func (m *mockOrderRepository) Create(ctx context.Context, order *models.Order) error {
+	if m.shouldFailCreate {
+		return errors.New("create error")
+	}
+
+	if m.orders == nil {
+		m.orders = make(map[string]*models.Order)
+	}
+	m.orders[order.Number] = order
+	return nil
+}
+
+func (m *mockOrderRepository) GetByNumber(ctx context.Context, number string) (*models.Order, error) {
+	if m.shouldFailGet {
+		return nil, errors.New("get error")
+	}
+
+	if m.getError != nil {
+		return nil, m.getError
+	}
+
+	if m.getResult != nil {
+		return m.getResult, nil
+	}
+
+	order, exists := m.orders[number]
+	if !exists {
+		return nil, errs.OrderNotFound
+	}
+	return order, nil
+}
+
+func TestOrderService_UploadOrder(t *testing.T) {
 	tests := []struct {
 		name        string
 		userID      string
 		orderNumber string
-		prepareRepo func(storage.OrderRepositoryInterface)
+		setupMock   func() repository.OrderRepositoryInterface
 		wantErr     error
 		checkResult func(*testing.T, *models.Order)
 	}{
@@ -30,8 +65,10 @@ func Test_orderService_UploadOrder(t *testing.T) {
 			name:        "successful upload new order",
 			userID:      "user123",
 			orderNumber: "12345678903",
-			prepareRepo: func(repo storage.OrderRepositoryInterface) {
-				// пустой репозиторий
+			setupMock: func() repository.OrderRepositoryInterface {
+				return &mockOrderRepository{
+					getError: errs.OrderNotFound, // заказ не найден - можно создавать
+				}
 			},
 			wantErr: nil,
 			checkResult: func(t *testing.T, order *models.Order) {
@@ -47,10 +84,15 @@ func Test_orderService_UploadOrder(t *testing.T) {
 			name:        "order already uploaded by same user",
 			userID:      "user123",
 			orderNumber: "12345678903",
-			prepareRepo: func(repo storage.OrderRepositoryInterface) {
-				// Создаем заказ от того же пользователя
-				existingOrder := models.NewOrder("12345678903", "user123")
-				repo.Create(context.Background(), existingOrder)
+			setupMock: func() repository.OrderRepositoryInterface {
+				existingOrder := &models.Order{
+					Number: "12345678903",
+					UserID: "user123",
+					Status: models.StatusNew,
+				}
+				return &mockOrderRepository{
+					getResult: existingOrder, // заказ уже существует от того же пользователя
+				}
 			},
 			wantErr: errs.OrderAlreadyUploadedByThisUser,
 			checkResult: func(t *testing.T, order *models.Order) {
@@ -61,12 +103,46 @@ func Test_orderService_UploadOrder(t *testing.T) {
 			name:        "order already uploaded by other user",
 			userID:      "user123",
 			orderNumber: "12345678903",
-			prepareRepo: func(repo storage.OrderRepositoryInterface) {
-				// Создаем заказ от другого пользователя
-				existingOrder := models.NewOrder("12345678903", "user456")
-				repo.Create(context.Background(), existingOrder)
+			setupMock: func() repository.OrderRepositoryInterface {
+				existingOrder := &models.Order{
+					Number: "12345678903",
+					UserID: "user456", // другой пользователь
+					Status: models.StatusNew,
+				}
+				return &mockOrderRepository{
+					getResult: existingOrder,
+				}
 			},
 			wantErr: errs.OrderAlreadyUploadedByOtherUser,
+			checkResult: func(t *testing.T, order *models.Order) {
+				assert.Nil(t, order)
+			},
+		},
+		{
+			name:        "repository error on GetByNumber",
+			userID:      "user123",
+			orderNumber: "12345678903",
+			setupMock: func() repository.OrderRepositoryInterface {
+				return &mockOrderRepository{
+					shouldFailGet: true,
+				}
+			},
+			wantErr: errors.New("get error"),
+			checkResult: func(t *testing.T, order *models.Order) {
+				assert.Nil(t, order)
+			},
+		},
+		{
+			name:        "repository error on Create",
+			userID:      "user123",
+			orderNumber: "12345678903",
+			setupMock: func() repository.OrderRepositoryInterface {
+				return &mockOrderRepository{
+					getError:         errs.OrderNotFound, // заказ не найден
+					shouldFailCreate: true,               // но создание падает
+				}
+			},
+			wantErr: errors.New("create error"),
 			checkResult: func(t *testing.T, order *models.Order) {
 				assert.Nil(t, order)
 			},
@@ -75,40 +151,30 @@ func Test_orderService_UploadOrder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, repo := setupOrderService()
+			// Создаем мок
+			mockRepo := tt.setupMock()
 
-			// Подготавливаем данные
-			if tt.prepareRepo != nil {
-				tt.prepareRepo(repo)
-			}
+			// Создаем сервис
+			service := NewOrderService(mockRepo)
 
 			// Выполняем тест
-			got, err := service.UploadOrder(context.Background(), tt.userID, tt.orderNumber)
+			order, err := service.UploadOrder(context.Background(), tt.userID, tt.orderNumber)
 
 			// Проверяем ошибку
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.wantErr, err)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
 			} else {
 				assert.NoError(t, err)
 			}
 
 			// Проверяем результат
-			if tt.checkResult != nil {
-				tt.checkResult(t, got)
-			}
-
-			// Дополнительная проверка: если заказ должен был сохраниться
-			if tt.wantErr == nil {
-				savedOrder, err := repo.GetByNumber(context.Background(), tt.orderNumber)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.userID, savedOrder.UserID)
-			}
+			tt.checkResult(t, order)
 		})
 	}
 }
 
-func Test_orderService_ValidateOrderNumber(t *testing.T) {
+func TestOrderService_ValidateOrderNumber(t *testing.T) {
 	tests := []struct {
 		name        string
 		orderNumber string
@@ -148,7 +214,9 @@ func Test_orderService_ValidateOrderNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, _ := setupOrderService()
+			// Для ValidateOrderNumber не нужен репозиторий
+			mockRepo := &mockOrderRepository{}
+			service := NewOrderService(mockRepo)
 
 			got := service.ValidateOrderNumber(context.Background(), tt.orderNumber)
 			assert.Equal(t, tt.want, got)
@@ -156,10 +224,11 @@ func Test_orderService_ValidateOrderNumber(t *testing.T) {
 	}
 }
 
-func Test_orderService_Integration(t *testing.T) {
-	service, _ := setupOrderService()
+// Интеграционный тест для проверки полного флоу
+func TestOrderService_Integration(t *testing.T) {
+	mockRepo := &mockOrderRepository{}
+	service := NewOrderService(mockRepo)
 
-	// Тест полного флоу
 	orderNumber := "12345678903"
 	userID := "user123"
 

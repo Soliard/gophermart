@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/Soliard/gophermart/internal/config"
-	"github.com/Soliard/gophermart/internal/storage"
+	"github.com/Soliard/gophermart/internal/repository"
 )
 
 type Services struct {
@@ -13,10 +13,10 @@ type Services struct {
 	Order OrderServiceInterface
 }
 
-func New(s *storage.Storage, c *config.Config) *Services {
+func New(s repository.Storage, c *config.Config) *Services {
 	services := &Services{}
 	services.JWT = NewJWTService(c.TokenSecret, time.Duration(c.TokenExpMinutes)*time.Minute)
-	services.User = NewUserService(s.UserRepository, services.JWT)
-	services.Order = NewOrderService(s.OrderRepository)
+	services.User = NewUserService(s.UserRepository(), services.JWT)
+	services.Order = NewOrderService(s.OrderRepository())
 	return services
 }

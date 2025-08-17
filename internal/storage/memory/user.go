@@ -15,7 +15,7 @@ type UserRepository struct {
 	Users Users
 }
 
-func NewUserRepository() *UserRepository {
+func newUserRepository() *UserRepository {
 	return &UserRepository{Users: Users{}}
 }
 

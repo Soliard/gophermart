@@ -20,9 +20,9 @@ func New() (*Config, error) {
 	flag.StringVar(&config.ServerHost, "a", "localhost:8080", "server addres")
 	flag.StringVar(&config.LogLevel, "l", "debug", "log level")
 	//postgres://postgres:postgres@localhost:5432/gotplmetrics?sslmode=disable
-	flag.StringVar(&config.DatabaseDSN, "d", "", "database connection string")
+	flag.StringVar(&config.DatabaseDSN, "d", "postgres://postgres:postgres@localhost:5432/gophermart?sslmode=disable", "database connection string")
 	flag.StringVar(&config.TokenSecret, "s", "gigasecret", "key will be used for jwt")
-	flag.IntVar(&config.TokenExpMinutes, "e", 1, "time in minutes to token expiring")
+	flag.IntVar(&config.TokenExpMinutes, "e", 10, "time in minutes to token expiring")
 	flag.Parse()
 
 	err := env.Parse(config)

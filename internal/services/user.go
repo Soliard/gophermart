@@ -3,20 +3,21 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/storage"
+	"github.com/Soliard/gophermart/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type userService struct {
-	UserRepository storage.UserRepositoryInterface
+	UserRepository repository.UserRepositoryInterface
 	JWTService     JWTServiceInterface
 }
 
-func NewUserService(userRepo storage.UserRepositoryInterface, jwtService JWTServiceInterface) *userService {
+func NewUserService(userRepo repository.UserRepositoryInterface, jwtService JWTServiceInterface) *userService {
 	return &userService{
 		UserRepository: userRepo,
 		JWTService:     jwtService,
@@ -52,6 +53,7 @@ func (s *userService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 }
 
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (string, error) {
+	now := time.Now().UTC()
 	u, err := s.UserRepository.GetByLogin(ctx, req.Login)
 	if err != nil {
 		if errors.Is(err, errs.UserNotFound) {
@@ -68,6 +70,10 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (string,
 	if err != nil {
 		return "", err
 	}
+
+	u.LastLoginAt = &now
+
+	s.UserRepository.UpdateLoginTime(ctx, u.ID, now)
 
 	return tokenString, nil
 }

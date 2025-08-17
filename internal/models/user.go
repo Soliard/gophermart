@@ -6,20 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	RoleUser  Role = "user"
-	RoleAdmin Role = "admin"
-)
-
-type Role string
-
 type User struct {
-	ID           string     `json:"id"`
-	Login        string     `json:"login"`
-	PasswordHash string     `json:"-"`
-	CreatedAt    time.Time  `json:"created_at"`
-	Roles        []Role     `json:"roles"`
-	LastLoginAt  *time.Time `json:"last_login_at"`
+	ID           string     `json:"id" db:"id"`
+	Login        string     `json:"login" db:"login"`
+	PasswordHash string     `json:"-" db:"password_hash"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	Roles        Roles      `json:"roles" db:"roles"`
+	LastLoginAt  *time.Time `json:"last_login_at" db:"last_login_at"`
 }
 
 func NewUser(login, passwordHash string) *User {
@@ -27,7 +20,7 @@ func NewUser(login, passwordHash string) *User {
 		ID:           uuid.New().String(),
 		Login:        login,
 		PasswordHash: passwordHash,
-		CreatedAt:    time.Now(),
+		CreatedAt:    time.Now().UTC(),
 		Roles:        []Role{RoleUser},
 	}
 }
