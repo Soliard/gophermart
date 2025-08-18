@@ -51,3 +51,7 @@ func (s *orderService) ValidateOrderNumber(ctx context.Context, orderNumber stri
 	}
 	return luhn.IsValid(num)
 }
+
+func (s *orderService) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
+	return s.OrderRepository.GetUserOrders(ctx, userID)
+}

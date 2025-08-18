@@ -47,6 +47,7 @@ func (a *App) Router() *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.Authorization(models.RoleUser))
 			r.Post("/api/user/orders", a.Handlers.Order.UploadOrder)
+			r.Get("/api/user/orders", a.Handlers.Order.GetUserOrders)
 		})
 
 	})

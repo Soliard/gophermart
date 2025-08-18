@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -67,4 +68,37 @@ func (h *orderHandler) UploadOrder(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.WriteHeader(http.StatusAccepted)
+}
+
+func (h *orderHandler) GetUserOrders(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	log := logger.FromContext(ctx)
+
+	userCtx, err := services.GetUserFromContext(ctx)
+	if err != nil {
+		log.Error("Failed to get user context from ctx after authentication", logger.F.Error(err))
+		http.Error(res, "Failed to get user context", http.StatusInternalServerError)
+		return
+	}
+
+	orders, err := h.orderService.GetUserOrders(ctx, userCtx.ID)
+	if err != nil {
+		log.Error("Failed to get user orders", logger.F.Error(err))
+		http.Error(res, "Failed to get orders", http.StatusInternalServerError)
+		return
+	}
+	respBody, err := json.Marshal(orders)
+	if err != nil {
+		log.Error("Failed to serialize orders", logger.F.Error(err))
+		http.Error(res, "Failed to create response body", http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(respBody)
 }

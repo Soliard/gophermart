@@ -15,6 +15,7 @@ type UserServiceInterface interface {
 type OrderServiceInterface interface {
 	UploadOrder(ctx context.Context, userID, orderNumber string) (*models.Order, error)
 	ValidateOrderNumber(ctx context.Context, orderNumber string) bool
+	GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error)
 }
 
 type JWTServiceInterface interface {

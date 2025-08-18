@@ -7,6 +7,11 @@ import (
 	"github.com/Soliard/gophermart/internal/models"
 )
 
+type Storage interface {
+	UserRepository() UserRepositoryInterface
+	OrderRepository() OrderRepositoryInterface
+}
+
 type UserRepositoryInterface interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
@@ -17,10 +22,5 @@ type UserRepositoryInterface interface {
 type OrderRepositoryInterface interface {
 	Create(ctx context.Context, order *models.Order) error
 	GetByNumber(ctx context.Context, number string) (*models.Order, error)
-	//GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error)
-}
-
-type Storage interface {
-	UserRepository() UserRepositoryInterface
-	OrderRepository() OrderRepositoryInterface
+	GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error)
 }

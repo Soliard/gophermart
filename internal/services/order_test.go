@@ -4,6 +4,8 @@ package services
 import (
 	"context"
 	"errors"
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/Soliard/gophermart/internal/errs"
@@ -50,6 +52,10 @@ func (m *mockOrderRepository) GetByNumber(ctx context.Context, number string) (*
 		return nil, errs.OrderNotFound
 	}
 	return order, nil
+}
+
+func (m *mockOrderRepository) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
+	return slices.Collect(maps.Values(m.orders)), nil
 }
 
 func TestOrderService_UploadOrder(t *testing.T) {

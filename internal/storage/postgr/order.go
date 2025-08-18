@@ -19,10 +19,8 @@ func newOrderRepository(db *sqlx.DB) *OrderRepository {
 }
 
 func (r *OrderRepository) Create(ctx context.Context, order *models.Order) error {
-	query := `
-		INSERT INTO orders (number, user_id, status, accrual, uploaded_at)
-		VALUES ($1, $2, $3, $4, $5)
-	`
+	query := `INSERT INTO orders (number, user_id, status, accrual, uploaded_at)
+			  VALUES ($1, $2, $3, $4, $5)`
 	_, err := r.db.ExecContext(ctx, query, order.Number, order.UserID, order.Status, order.Accrual, order.UploadedAt)
 	return err
 }
@@ -38,4 +36,17 @@ func (r *OrderRepository) GetByNumber(ctx context.Context, number string) (*mode
 		return nil, err
 	}
 	return order, nil
+}
+
+func (r *OrderRepository) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
+	var orders []*models.Order
+	query := `SELECT number, user_id, status, accrual, uploaded_at 
+			  FROM orders 
+			  WHERE user_id = $1 
+			  ORDER BY uploaded_at DESC`
+	err := r.db.SelectContext(ctx, &orders, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
 }
