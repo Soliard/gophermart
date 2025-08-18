@@ -7,9 +7,12 @@ import (
 	"github.com/Soliard/gophermart/internal/models"
 )
 
-type UserServiceInterface interface {
-	Register(ctx context.Context, req *dto.RegisterRequest) (*models.User, error)
+type AuthServiceInterface interface {
 	Login(ctx context.Context, req *dto.LoginRequest) (token string, err error)
+}
+
+type RegistrationServiceInterface interface {
+	Register(ctx context.Context, req *dto.RegisterRequest) (*models.User, error)
 }
 
 type OrderServiceInterface interface {

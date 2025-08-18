@@ -12,17 +12,17 @@ import (
 )
 
 type orderService struct {
-	OrderRepository repository.OrderRepositoryInterface
+	order repository.OrderRepositoryInterface
 }
 
 func NewOrderService(orderRepository repository.OrderRepositoryInterface) *orderService {
 	return &orderService{
-		OrderRepository: orderRepository,
+		order: orderRepository,
 	}
 }
 
 func (s *orderService) UploadOrder(ctx context.Context, userID, orderNumber string) (*models.Order, error) {
-	order, err := s.OrderRepository.GetByNumber(ctx, orderNumber)
+	order, err := s.order.GetByNumber(ctx, orderNumber)
 	if err != nil && !errors.Is(err, errs.OrderNotFound) {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (s *orderService) UploadOrder(ctx context.Context, userID, orderNumber stri
 	}
 
 	newOrder := models.NewOrder(orderNumber, userID)
-	err = s.OrderRepository.Create(ctx, newOrder)
+	err = s.order.Create(ctx, newOrder)
 	if err != nil {
 		return nil, err
 	}
@@ -53,5 +53,5 @@ func (s *orderService) ValidateOrderNumber(ctx context.Context, orderNumber stri
 }
 
 func (s *orderService) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
-	return s.OrderRepository.GetUserOrders(ctx, userID)
+	return s.order.GetUserOrders(ctx, userID)
 }

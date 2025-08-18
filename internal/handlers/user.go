@@ -12,12 +12,14 @@ import (
 )
 
 type userHandler struct {
-	userService services.UserServiceInterface
+	reg  services.RegistrationServiceInterface
+	auth services.AuthServiceInterface
 }
 
-func NewUserHandler(userService services.UserServiceInterface) *userHandler {
+func NewUserHandler(reg services.RegistrationServiceInterface, auth services.AuthServiceInterface) *userHandler {
 	return &userHandler{
-		userService: userService,
+		reg:  reg,
+		auth: auth,
 	}
 }
 
@@ -37,7 +39,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	u, err := h.userService.Register(ctx, regData)
+	u, err := h.reg.Register(ctx, regData)
 	if err != nil {
 		if errors.Is(err, errs.LoginAlreadyExists) {
 			http.Error(res, "User with this login already exists", http.StatusConflict)
@@ -53,7 +55,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	}
 
 	logData := &dto.LoginRequest{Login: regData.Login, Password: regData.Password}
-	token, err := h.userService.Login(ctx, logData)
+	token, err := h.auth.Login(ctx, logData)
 	if err != nil {
 		log.Error("Failed to login after register (shouldnt happen)",
 			logger.F.Error(err),
@@ -97,7 +99,7 @@ func (h *userHandler) Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := h.userService.Login(ctx, logData)
+	token, err := h.auth.Login(ctx, logData)
 	if err != nil {
 		if errors.Is(err, errs.WrongLoginOrPassword) {
 			http.Error(res, "Wrong login or password", http.StatusUnauthorized)

@@ -9,7 +9,7 @@ type Handlers struct {
 
 func New(services *services.Services) *Handlers {
 	return &Handlers{
-		User:  NewUserHandler(services.User),
+		User:  NewUserHandler(services.Reg, services.Auth),
 		Order: NewOrderHandler(services.Order),
 	}
 }
