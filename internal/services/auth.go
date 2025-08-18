@@ -7,16 +7,21 @@ import (
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
-	"github.com/Soliard/gophermart/internal/repository"
+	"github.com/Soliard/gophermart/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserLoginner interface {
+	GetByLogin(ctx context.Context, login string) (*models.User, error)
+	UpdateLoginTime(ctx context.Context, userID string, time time.Time) error
+}
+
 type authService struct {
-	user repository.UserRepositoryInterface
+	user UserLoginner
 	jwt  JWTServiceInterface
 }
 
-func NewAuthService(userRepo repository.UserRepositoryInterface, jwtService JWTServiceInterface) *authService {
+func NewAuthService(userRepo UserLoginner, jwtService JWTServiceInterface) *authService {
 	return &authService{
 		user: userRepo,
 		jwt:  jwtService,

@@ -6,15 +6,19 @@ import (
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type registrationService struct {
-	repo repository.UserRepositoryInterface
+type UserRegistrator interface {
+	Create(ctx context.Context, user *models.User) error
+	UserExists(ctx context.Context, login string) (bool, error)
 }
 
-func NewRegistrationService(userRepo repository.UserRepositoryInterface) *registrationService {
+type registrationService struct {
+	repo UserRegistrator
+}
+
+func NewRegistrationService(userRepo UserRegistrator) *registrationService {
 	return &registrationService{
 		repo: userRepo,
 	}

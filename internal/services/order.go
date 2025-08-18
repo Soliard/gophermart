@@ -7,15 +7,20 @@ import (
 
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/phedde/luhn-algorithm"
 )
 
-type orderService struct {
-	order repository.OrderRepositoryInterface
+type OrderCreator interface {
+	Create(ctx context.Context, order *models.Order) error
+	GetByNumber(ctx context.Context, number string) (*models.Order, error)
+	GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error)
 }
 
-func NewOrderService(orderRepository repository.OrderRepositoryInterface) *orderService {
+type orderService struct {
+	order OrderCreator
+}
+
+func NewOrderService(orderRepository OrderCreator) *orderService {
 	return &orderService{
 		order: orderRepository,
 	}

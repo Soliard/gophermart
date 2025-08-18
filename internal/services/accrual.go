@@ -11,17 +11,23 @@ import (
 
 	"github.com/Soliard/gophermart/internal/logger"
 	"github.com/Soliard/gophermart/internal/models"
-	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/go-resty/resty/v2"
 )
 
+type OrderAccrualUpdater interface {
+	GetOrdersToAccrualUpdate(ctx context.Context) ([]*models.Order, error)
+	UpdateStatusAndAccural(
+		ctx context.Context, numberOrder string,
+		status models.OrderStatus, accrual *float64) error
+}
+
 type accrualService struct {
-	orders  repository.OrderRepositoryInterface
+	orders  OrderAccrualUpdater
 	client  *resty.Client
 	baseURL string
 }
 
-func NewAccrualService(orders repository.OrderRepositoryInterface, accrualURL string) *accrualService {
+func NewAccrualService(orders OrderAccrualUpdater, accrualURL string) *accrualService {
 	if !strings.HasPrefix(accrualURL, "http://") && !strings.HasPrefix(accrualURL, "https://") {
 		accrualURL = "http://" + accrualURL
 	}
