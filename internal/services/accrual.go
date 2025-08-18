@@ -14,7 +14,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type OrderAccrualUpdater interface {
+type AccrualUpdater interface {
 	GetOrdersToAccrualUpdate(ctx context.Context) ([]*models.Order, error)
 	UpdateStatusAndAccural(
 		ctx context.Context, numberOrder string,
@@ -22,18 +22,18 @@ type OrderAccrualUpdater interface {
 }
 
 type accrualService struct {
-	orders  OrderAccrualUpdater
+	updater AccrualUpdater
 	client  *resty.Client
 	baseURL string
 }
 
-func NewAccrualService(orders OrderAccrualUpdater, accrualURL string) *accrualService {
+func NewAccrualService(orders AccrualUpdater, accrualURL string) *accrualService {
 	if !strings.HasPrefix(accrualURL, "http://") && !strings.HasPrefix(accrualURL, "https://") {
 		accrualURL = "http://" + accrualURL
 	}
 
 	return &accrualService{
-		orders:  orders,
+		updater: orders,
 		client:  resty.New(),
 		baseURL: accrualURL,
 	}
@@ -41,7 +41,7 @@ func NewAccrualService(orders OrderAccrualUpdater, accrualURL string) *accrualSe
 
 func (s *accrualService) UpdateOrders(ctx context.Context) error {
 	log := logger.FromContext(ctx)
-	orders, err := s.orders.GetOrdersToAccrualUpdate(ctx)
+	orders, err := s.updater.GetOrdersToAccrualUpdate(ctx)
 	if err != nil {
 		return err
 	}
@@ -93,5 +93,5 @@ func (s *accrualService) updateStatusAndAccural(
 	ctx context.Context, number string,
 	status models.OrderStatus, accural *float64) error {
 
-	return s.orders.UpdateStatusAndAccural(ctx, number, status, accural)
+	return s.updater.UpdateStatusAndAccural(ctx, number, status, accural)
 }

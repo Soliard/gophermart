@@ -4,8 +4,17 @@ import (
 	"time"
 
 	"github.com/Soliard/gophermart/internal/config"
-	"github.com/Soliard/gophermart/internal/repository"
 )
+
+type UserRepository interface {
+	UserLoginner
+	UserRegistrator
+}
+
+type OrderRepository interface {
+	OrderCreator
+	AccrualUpdater
+}
 
 type Services struct {
 	Auth    AuthServiceInterface
@@ -15,12 +24,12 @@ type Services struct {
 	Accrual AccrualServiceInterface
 }
 
-func New(s repository.Storage, c *config.Config) *Services {
+func New(users UserRepository, orders OrderRepository, c *config.Config) *Services {
 	services := &Services{}
 	services.JWT = NewJWTService(c.TokenSecret, time.Duration(c.TokenExpMinutes)*time.Minute)
-	services.Auth = NewAuthService(s.UserRepository(), services.JWT)
-	services.Reg = NewRegistrationService(s.UserRepository())
-	services.Order = NewOrderService(s.OrderRepository())
-	services.Accrual = NewAccrualService(s.OrderRepository(), c.AccrualAddress)
+	services.Auth = NewAuthService(users, services.JWT)
+	services.Reg = NewRegistrationService(users)
+	services.Order = NewOrderService(orders)
+	services.Accrual = NewAccrualService(orders, c.AccrualAddress)
 	return services
 }

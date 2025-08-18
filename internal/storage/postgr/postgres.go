@@ -4,31 +4,14 @@ import (
 	"context"
 	"embed"
 
-	"github.com/Soliard/gophermart/internal/repository"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jmoiron/sqlx"
 )
 
-type PostgresStorage struct {
-	userRepository  repository.UserRepositoryInterface
-	orderRepository repository.OrderRepositoryInterface
-}
-
-func (s *PostgresStorage) UserRepository() repository.UserRepositoryInterface {
-	return s.userRepository
-}
-
-func (s *PostgresStorage) OrderRepository() repository.OrderRepositoryInterface {
-	return s.orderRepository
-}
-
-//go:embed migrations/*.sql
-var migrationsFS embed.FS
-
-func NewPostgresStorage(ctx context.Context, databaseDSN string) (repository.Storage, error) {
-	db, err := sqlx.Open("postgres", databaseDSN)
+func NewConnection(ctx context.Context, connectionString string) (*sqlx.DB, error) {
+	db, err := sqlx.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -41,11 +24,11 @@ func NewPostgresStorage(ctx context.Context, databaseDSN string) (repository.Sto
 		return nil, err
 	}
 
-	return &PostgresStorage{
-		userRepository:  newUserRepository(db),
-		orderRepository: newOrderRepository(db),
-	}, nil
+	return db, nil
 }
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 func runMigrations(db *sqlx.DB) error {
 	//exmpl migrate create -ext sql -dir migrations -seq create_metrics_table

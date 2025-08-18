@@ -15,12 +15,12 @@ type UserRegistrator interface {
 }
 
 type registrationService struct {
-	repo UserRegistrator
+	registrator UserRegistrator
 }
 
 func NewRegistrationService(userRepo UserRegistrator) *registrationService {
 	return &registrationService{
-		repo: userRepo,
+		registrator: userRepo,
 	}
 }
 
@@ -29,7 +29,7 @@ func (s *registrationService) Register(ctx context.Context, req *dto.RegisterReq
 		return nil, errs.EmptyLoginOrPassword
 	}
 
-	exists, err := s.repo.UserExists(ctx, req.Login)
+	exists, err := s.registrator.UserExists(ctx, req.Login)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *registrationService) Register(ctx context.Context, req *dto.RegisterReq
 
 	user := models.NewUser(req.Login, string(hashedPassword))
 
-	err = s.repo.Create(ctx, user)
+	err = s.registrator.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}

@@ -17,17 +17,17 @@ type OrderCreator interface {
 }
 
 type orderService struct {
-	order OrderCreator
+	creator OrderCreator
 }
 
 func NewOrderService(orderRepository OrderCreator) *orderService {
 	return &orderService{
-		order: orderRepository,
+		creator: orderRepository,
 	}
 }
 
 func (s *orderService) UploadOrder(ctx context.Context, userID, orderNumber string) (*models.Order, error) {
-	order, err := s.order.GetByNumber(ctx, orderNumber)
+	order, err := s.creator.GetByNumber(ctx, orderNumber)
 	if err != nil && !errors.Is(err, errs.OrderNotFound) {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *orderService) UploadOrder(ctx context.Context, userID, orderNumber stri
 	}
 
 	newOrder := models.NewOrder(orderNumber, userID)
-	err = s.order.Create(ctx, newOrder)
+	err = s.creator.Create(ctx, newOrder)
 	if err != nil {
 		return nil, err
 	}
@@ -58,5 +58,5 @@ func (s *orderService) ValidateOrderNumber(ctx context.Context, orderNumber stri
 }
 
 func (s *orderService) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
-	return s.order.GetUserOrders(ctx, userID)
+	return s.creator.GetUserOrders(ctx, userID)
 }

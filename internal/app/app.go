@@ -9,7 +9,7 @@ import (
 	"github.com/Soliard/gophermart/internal/middlewares"
 	"github.com/Soliard/gophermart/internal/models"
 	"github.com/Soliard/gophermart/internal/services"
-	"github.com/Soliard/gophermart/internal/storage"
+	"github.com/Soliard/gophermart/internal/storage/postgr"
 	"github.com/Soliard/gophermart/internal/workers"
 	"github.com/go-chi/chi"
 )
@@ -21,11 +21,15 @@ type App struct {
 }
 
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
-	store, err := storage.New(ctx, cfg)
+
+	db, err := postgr.NewConnection(ctx, cfg.DatabaseDSN)
 	if err != nil {
 		return nil, err
 	}
-	services := services.New(store, cfg)
+	repoUser := postgr.NewUserRepository(db)
+	repoOrder := postgr.NewOrderRepository(db)
+
+	services := services.New(repoUser, repoOrder, cfg)
 	handlers := handlers.New(services)
 
 	accuralUpdater := workers.NewAccrualUpdater(services.Accrual, time.Duration(time.Second*10))

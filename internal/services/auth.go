@@ -17,20 +17,20 @@ type UserLoginner interface {
 }
 
 type authService struct {
-	user UserLoginner
-	jwt  JWTServiceInterface
+	loginner UserLoginner
+	jwt      JWTServiceInterface
 }
 
 func NewAuthService(userRepo UserLoginner, jwtService JWTServiceInterface) *authService {
 	return &authService{
-		user: userRepo,
-		jwt:  jwtService,
+		loginner: userRepo,
+		jwt:      jwtService,
 	}
 }
 
 func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (string, error) {
 	now := time.Now().UTC()
-	u, err := s.user.GetByLogin(ctx, req.Login)
+	u, err := s.loginner.GetByLogin(ctx, req.Login)
 	if err != nil {
 		if errors.Is(err, errs.UserNotFound) {
 			return "", errs.WrongLoginOrPassword
@@ -49,7 +49,7 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (string,
 
 	u.LastLoginAt = &now
 
-	s.user.UpdateLoginTime(ctx, u.ID, now)
+	s.loginner.UpdateLoginTime(ctx, u.ID, now)
 
 	return tokenString, nil
 }

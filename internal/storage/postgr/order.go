@@ -14,7 +14,7 @@ type OrderRepository struct {
 	db *sqlx.DB
 }
 
-func newOrderRepository(db *sqlx.DB) *OrderRepository {
+func NewOrderRepository(db *sqlx.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
