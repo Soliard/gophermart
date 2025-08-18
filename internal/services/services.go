@@ -8,10 +8,11 @@ import (
 )
 
 type Services struct {
-	Auth  AuthServiceInterface
-	Reg   RegistrationServiceInterface
-	JWT   JWTServiceInterface
-	Order OrderServiceInterface
+	Auth    AuthServiceInterface
+	Reg     RegistrationServiceInterface
+	JWT     JWTServiceInterface
+	Order   OrderServiceInterface
+	Accrual AccrualServiceInterface
 }
 
 func New(s repository.Storage, c *config.Config) *Services {
@@ -20,5 +21,6 @@ func New(s repository.Storage, c *config.Config) *Services {
 	services.Auth = NewAuthService(s.UserRepository(), services.JWT)
 	services.Reg = NewRegistrationService(s.UserRepository())
 	services.Order = NewOrderService(s.OrderRepository())
+	services.Accrual = NewAccrualService(s.OrderRepository(), c.AccrualAddress)
 	return services
 }

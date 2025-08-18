@@ -17,8 +17,8 @@ var signingMethod jwt.SigningMethod = jwt.SigningMethodHS256
 type ctxKey string
 
 type jwtService struct {
-	tokenSecret  string
-	tokenExpires time.Duration
+	secret       string
+	expiresAfter time.Duration
 }
 
 type UserContext struct {
@@ -33,20 +33,20 @@ type claims struct {
 
 func NewJWTService(secret string, expires time.Duration) *jwtService {
 	return &jwtService{
-		tokenSecret:  secret,
-		tokenExpires: expires,
+		secret:       secret,
+		expiresAfter: expires,
 	}
 }
 
 func (s *jwtService) GenerateToken(u *models.User) (string, error) {
 	token := jwt.NewWithClaims(signingMethod, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpires)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.expiresAfter)),
 		},
 		User: UserContext{ID: u.ID, Roles: u.Roles},
 	})
 
-	tokenString, err := token.SignedString([]byte(s.tokenSecret))
+	tokenString, err := token.SignedString([]byte(s.secret))
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func (s *jwtService) GetClaims(tokenString string) (*UserContext, error) {
 		if t.Method != signingMethod {
 			return nil, errs.TokenInvalid
 		}
-		return []byte(s.tokenSecret), nil
+		return []byte(s.secret), nil
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, keyfunc)

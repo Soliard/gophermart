@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	ServerHost      string `env:"ADDRESS"`
+	ServerHost      string `env:"RUN_ADDRESS"`
 	LogLevel        string `env:"LOG_LEVEL"`
-	DatabaseDSN     string `env:"DATABASE_DSN"`
+	DatabaseDSN     string `env:"DATABASE_URI"`
 	TokenSecret     string `env:"TOKEN_SECRET"`
 	TokenExpMinutes int    `env:"TOKEN_EXP"`
+	AccrualAddress  string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 
 func New() (*Config, error) {
@@ -23,6 +24,7 @@ func New() (*Config, error) {
 	flag.StringVar(&config.DatabaseDSN, "d", "postgres://postgres:postgres@localhost:5432/gophermart?sslmode=disable", "database connection string")
 	flag.StringVar(&config.TokenSecret, "s", "gigasecret", "key will be used for jwt")
 	flag.IntVar(&config.TokenExpMinutes, "e", 10, "time in minutes to token expiring")
+	flag.StringVar(&config.AccrualAddress, "r", "localhost:5050", "address accural system")
 	flag.Parse()
 
 	err := env.Parse(config)

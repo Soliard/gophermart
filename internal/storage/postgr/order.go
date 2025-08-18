@@ -40,7 +40,7 @@ func (r *OrderRepository) GetByNumber(ctx context.Context, number string) (*mode
 
 func (r *OrderRepository) GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error) {
 	var orders []*models.Order
-	query := `SELECT number, user_id, status, accrual, uploaded_at 
+	query := `SELECT *
 			  FROM orders 
 			  WHERE user_id = $1 
 			  ORDER BY uploaded_at DESC`
@@ -49,4 +49,32 @@ func (r *OrderRepository) GetUserOrders(ctx context.Context, userID string) ([]*
 		return nil, err
 	}
 	return orders, nil
+}
+
+func (r *OrderRepository) GetOrdersToAccrualUpdate(ctx context.Context) ([]*models.Order, error) {
+	var orders []*models.Order
+	query := `SELECT * 
+			  FROM orders 
+			  WHERE status not in ($1, $2)`
+	err := r.db.SelectContext(ctx, &orders, query, models.StatusInvalid, models.StatusProcessed)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
+func (r *OrderRepository) UpdateStatusAndAccural(
+	ctx context.Context,
+	numberOrder string,
+	status models.OrderStatus,
+	accrual *float64) error {
+
+	query := `UPDATE orders 
+			  SET status = $1, accrual = $2
+			  WHERE number = $3`
+	_, err := r.db.ExecContext(ctx, query, status, accrual, numberOrder)
+	if err != nil {
+		return err
+	}
+	return nil
 }

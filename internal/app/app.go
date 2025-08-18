@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/Soliard/gophermart/internal/config"
 	"github.com/Soliard/gophermart/internal/handlers"
@@ -9,6 +10,7 @@ import (
 	"github.com/Soliard/gophermart/internal/models"
 	"github.com/Soliard/gophermart/internal/services"
 	"github.com/Soliard/gophermart/internal/storage"
+	"github.com/Soliard/gophermart/internal/workers"
 	"github.com/go-chi/chi"
 )
 
@@ -25,6 +27,10 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 	services := services.New(store, cfg)
 	handlers := handlers.New(services)
+
+	accuralUpdater := workers.NewAccrualUpdater(services.Accrual, time.Duration(time.Second*10))
+	go accuralUpdater.Start(ctx)
+
 	return &App{
 		Config:   cfg,
 		Handlers: handlers,

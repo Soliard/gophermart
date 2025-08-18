@@ -23,4 +23,10 @@ type OrderRepositoryInterface interface {
 	Create(ctx context.Context, order *models.Order) error
 	GetByNumber(ctx context.Context, number string) (*models.Order, error)
 	GetUserOrders(ctx context.Context, userID string) ([]*models.Order, error)
+	GetOrdersToAccrualUpdate(ctx context.Context) ([]*models.Order, error)
+	UpdateStatusAndAccural(
+		ctx context.Context,
+		numberOrder string,
+		status models.OrderStatus,
+		accrual *float64) error
 }

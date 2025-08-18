@@ -25,3 +25,7 @@ type JWTServiceInterface interface {
 	GenerateToken(u *models.User) (string, error)
 	GetClaims(token string) (*UserContext, error)
 }
+
+type AccrualServiceInterface interface {
+	UpdateOrders(ctx context.Context) error
+}
