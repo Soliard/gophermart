@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
@@ -21,8 +22,9 @@ func NewWithdrawalHandler(service services.WithdrawalServiceInterface) *withdraw
 func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
+	ct := req.Header.Get("Content-Type")
 
-	if req.Header.Get("Content-Type") != "application/json" {
+	if !strings.HasPrefix(ct, "application/json") {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
@@ -38,7 +40,7 @@ func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http
 	err = json.NewDecoder(req.Body).Decode(reqData)
 	if err != nil {
 		log.Error("Failed to decode body", logger.F.Error(err))
-		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
+		http.Error(res, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +57,7 @@ func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http
 
 	case errs.WithdrawalAlreadyProcessed:
 		log.Warn("Attempt withdrawal order that already has been withdrawed", logger.F.Any("request data", reqData))
-		http.Error(res, "For this order already exists withdrawal", http.StatusAlreadyReported)
+		res.WriteHeader(http.StatusOK)
 		return
 
 	case errs.BalanceInsufficient:

@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	StatusNew        OrderStatus = "NEW"        //заказ новый
 	StatusRegistered OrderStatus = "REGISTERED" //заказ зарегистрирован, но вознаграждение не рассчитано
 	StatusProcessing OrderStatus = "PROCESSING" //расчёт начисления в процессе
 	StatusInvalid    OrderStatus = "INVALID"    //заказ не принят к расчёту, и вознаграждение не будет начислено
@@ -25,7 +26,7 @@ func NewOrder(number, userID string) *Order {
 	return &Order{
 		Number:     number,
 		UserID:     userID,
-		Status:     StatusRegistered,
+		Status:     StatusNew,
 		Accrual:    nil,
 		UploadedAt: time.Now().UTC(),
 	}

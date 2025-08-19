@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/logger"
 	"github.com/Soliard/gophermart/internal/models"
 	"github.com/go-resty/resty/v2"
@@ -78,12 +79,12 @@ func (s *accrualService) updateOrder(ctx context.Context, number string) error {
 			return errors.New("Unexpected status code from accrual service")
 		}
 
-		var recievedOrder models.Order
+		var recievedOrder dto.AccrualOrder
 		err = json.Unmarshal(resp.Body(), &recievedOrder)
 		if err != nil {
 			return err
 		}
-		return s.updateStatusAndAccural(ctx, recievedOrder.Number, recievedOrder.Status, recievedOrder.Accrual)
+		return s.updateStatusAndAccural(ctx, recievedOrder.Order, models.OrderStatus(recievedOrder.Status), recievedOrder.Accrual)
 	}
 
 	return nil

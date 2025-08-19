@@ -7,8 +7,8 @@ import (
 )
 
 type Withdrawal struct {
-	ID          string    `json:"id" db:"id"`
-	UserID      string    `json:"user_id" db:"user_id"`
+	ID          string    `json:"-" db:"id"`
+	UserID      string    `json:"-" db:"user_id"`
 	OrderNumber string    `json:"order" db:"order_number"`
 	Sum         float64   `json:"sum" db:"sum"`
 	ProcessedAt time.Time `json:"processed_at" db:"processed_at"`

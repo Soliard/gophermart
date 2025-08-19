@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/logger"
@@ -24,8 +25,9 @@ func NewOrderHandler(orderService services.OrderServiceInterface) *orderHandler 
 func (h *orderHandler) UploadOrder(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
+	ct := req.Header.Get("Content-Type")
 
-	if req.Header.Get("Content-Type") != "text/plain" {
+	if !strings.HasPrefix(ct, "text/plain") {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}

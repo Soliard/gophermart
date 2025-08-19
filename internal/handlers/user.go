@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
@@ -26,7 +27,9 @@ func NewUserHandler(reg services.RegistrationServiceInterface, auth services.Aut
 func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
-	if req.Header.Get("Content-Type") != "application/json" {
+	ct := req.Header.Get("Content-Type")
+
+	if !strings.HasPrefix(ct, "application/json") {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
@@ -35,7 +38,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(regData)
 	if err != nil {
 		log.Error("Failed to decode body", logger.F.Error(err))
-		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
+		http.Error(res, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
 
@@ -67,7 +70,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	bod, err := json.Marshal(u)
+	body, err := json.Marshal(u)
 	if err != nil {
 		log.Error("Failed to marshal body", logger.F.Error(err))
 		http.Error(res, "Failed response", http.StatusInternalServerError)
@@ -75,7 +78,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	}
 	res.Header().Add("Authorization", token)
 	res.WriteHeader(http.StatusOK)
-	res.Write(bod)
+	res.Write(body)
 }
 
 func (h *userHandler) Login(res http.ResponseWriter, req *http.Request) {
@@ -91,7 +94,7 @@ func (h *userHandler) Login(res http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(logData)
 	if err != nil {
 		log.Error("Failed to decode body", logger.F.Error(err))
-		http.Error(res, "Failed to decode body", http.StatusInternalServerError)
+		http.Error(res, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
 	if logData.Login == "" || logData.Password == "" {
