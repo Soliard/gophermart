@@ -51,16 +51,16 @@ func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http
 
 	err = h.service.ProcessWithdraw(ctx, userCtx.ID, reqData.Order, reqData.Sum)
 	switch err {
-	case errs.OrderIsNotValid:
+	case errs.ErrOrderIsNotValid:
 		http.Error(res, "Order number is not valid", http.StatusUnprocessableEntity)
 		return
 
-	case errs.WithdrawalAlreadyProcessed:
+	case errs.ErrWithdrawalAlreadyProcessed:
 		log.Warn("Attempt withdrawal order that already has been withdrawed", logger.F.Any("request data", reqData))
 		res.WriteHeader(http.StatusOK)
 		return
 
-	case errs.BalanceInsufficient:
+	case errs.ErrBalanceInsufficient:
 		http.Error(res, "Not enough points on balance", http.StatusPaymentRequired)
 		return
 	}

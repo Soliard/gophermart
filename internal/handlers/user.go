@@ -44,11 +44,11 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 
 	u, err := h.reg.Register(ctx, regData)
 	if err != nil {
-		if errors.Is(err, errs.LoginAlreadyExists) {
+		if errors.Is(err, errs.ErrLoginAlreadyExists) {
 			http.Error(res, "User with this login already exists", http.StatusConflict)
 			return
 		}
-		if errors.Is(err, errs.EmptyLoginOrPassword) {
+		if errors.Is(err, errs.ErrEmptyLoginOrPassword) {
 			http.Error(res, "Login and password must be not empty", http.StatusBadRequest)
 			return
 		}
@@ -104,7 +104,7 @@ func (h *userHandler) Login(res http.ResponseWriter, req *http.Request) {
 
 	token, err := h.auth.Login(ctx, logData)
 	if err != nil {
-		if errors.Is(err, errs.WrongLoginOrPassword) {
+		if errors.Is(err, errs.ErrWrongLoginOrPassword) {
 			http.Error(res, "Wrong login or password", http.StatusUnauthorized)
 			return
 		}

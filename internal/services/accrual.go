@@ -3,13 +3,13 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/Soliard/gophermart/internal/dto"
+	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/logger"
 	"github.com/Soliard/gophermart/internal/models"
 	"github.com/go-resty/resty/v2"
@@ -76,7 +76,7 @@ func (s *accrualService) updateOrder(ctx context.Context, number string) error {
 			time.Sleep(time.Second * 60)
 			continue
 		default:
-			return errors.New("Unexpected status code from accrual service")
+			return errs.ErrUnexpectedStatusAccrualService
 		}
 
 		var recievedOrder dto.AccrualOrder

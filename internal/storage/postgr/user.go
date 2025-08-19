@@ -34,7 +34,7 @@ func (r *UserRepository) GetByLogin(ctx context.Context, login string) (*models.
 	err := r.db.GetContext(ctx, user, query, login)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.UserNotFound
+			return nil, errs.ErrUserNotFound
 		}
 		return nil, err
 	}

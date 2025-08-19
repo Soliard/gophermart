@@ -34,7 +34,7 @@ func (r *BalanceRepository) GetUserBalance(ctx context.Context, userID string) (
 	err := r.db.GetContext(ctx, &balance, query, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.UserNotFound
+			return nil, errs.ErrUserNotFound
 		}
 		return nil, err
 	}

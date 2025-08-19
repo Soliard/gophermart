@@ -42,7 +42,7 @@ func extractTokenFromHeaders(req *http.Request) (string, error) {
 
 	token := req.Header.Get(authHeader)
 	if token == "" {
-		return "", errs.TokenNotFound
+		return "", errs.ErrTokenNotFound
 	}
 
 	if strings.HasPrefix(token, bearerPrefix) {

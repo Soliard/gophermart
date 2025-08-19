@@ -56,11 +56,11 @@ func (h *orderHandler) UploadOrder(res http.ResponseWriter, req *http.Request) {
 
 	_, err = h.orderService.UploadOrder(ctx, userCtx.ID, orderNumber)
 	if err != nil {
-		if errors.Is(err, errs.OrderAlreadyUploadedByOtherUser) {
+		if errors.Is(err, errs.ErrOrderAlreadyUploadedByOtherUser) {
 			http.Error(res, "Order already uploaded by other user", http.StatusConflict)
 			return
 		}
-		if errors.Is(err, errs.OrderAlreadyUploadedByThisUser) {
+		if errors.Is(err, errs.ErrOrderAlreadyUploadedByThisUser) {
 			res.WriteHeader(http.StatusOK)
 			return
 		}

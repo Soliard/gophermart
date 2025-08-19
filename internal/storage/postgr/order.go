@@ -31,7 +31,7 @@ func (r *OrderRepository) GetByNumber(ctx context.Context, number string) (*mode
 	err := r.db.GetContext(ctx, order, query, number)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.OrderNotFound
+			return nil, errs.ErrOrderNotFound
 		}
 		return nil, err
 	}

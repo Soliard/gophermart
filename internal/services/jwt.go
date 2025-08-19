@@ -57,7 +57,7 @@ func (s *jwtService) GetClaims(tokenString string) (*UserContext, error) {
 	claims := &claims{}
 	keyfunc := func(t *jwt.Token) (interface{}, error) {
 		if t.Method != signingMethod {
-			return nil, errs.TokenInvalid
+			return nil, errs.ErrTokenInvalid
 		}
 		return []byte(s.secret), nil
 	}
@@ -65,13 +65,13 @@ func (s *jwtService) GetClaims(tokenString string) (*UserContext, error) {
 	token, err := jwt.ParseWithClaims(tokenString, claims, keyfunc)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, errs.TokenExpired
+			return nil, errs.ErrTokenExpired
 		}
 		return nil, err
 	}
 
 	if !token.Valid {
-		return nil, errs.TokenInvalid
+		return nil, errs.ErrTokenInvalid
 	}
 
 	return &claims.User, nil
@@ -84,7 +84,7 @@ func ContextWithUser(ctx context.Context, u *UserContext) context.Context {
 func GetUserFromContext(ctx context.Context) (*UserContext, error) {
 	user, ok := ctx.Value(ctxKeyUserContext).(*UserContext)
 	if !ok {
-		return nil, errs.EmptyContextUser
+		return nil, errs.ErrEmptyContextUser
 	}
 	return user, nil
 }

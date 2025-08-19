@@ -30,7 +30,7 @@ func NewWithdrawalService(repo Withdrawer, balance BalanceServiceInterface, orde
 func (s *withdrawalService) ProcessWithdraw(ctx context.Context, userID, orderNumber string, sum float64) error {
 	isValid := s.orders.ValidateOrderNumber(ctx, orderNumber)
 	if !isValid {
-		return errs.OrderIsNotValid
+		return errs.ErrOrderIsNotValid
 	}
 
 	exists, err := s.repo.WithdrawalExists(ctx, userID, orderNumber)
@@ -38,7 +38,7 @@ func (s *withdrawalService) ProcessWithdraw(ctx context.Context, userID, orderNu
 		return err
 	}
 	if exists {
-		return errs.WithdrawalAlreadyProcessed
+		return errs.ErrWithdrawalAlreadyProcessed
 	}
 
 	balance, err := s.balance.GetBalance(ctx, userID)
@@ -46,7 +46,7 @@ func (s *withdrawalService) ProcessWithdraw(ctx context.Context, userID, orderNu
 		return err
 	}
 	if balance.Current < sum {
-		return errs.BalanceInsufficient
+		return errs.ErrBalanceInsufficient
 	}
 
 	withdrawal := models.NewWithdrawal(userID, orderNumber, sum)

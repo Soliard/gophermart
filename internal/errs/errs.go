@@ -3,24 +3,26 @@ package errs
 import "errors"
 
 var (
-	UserNotFound         = errors.New("User not found")
-	EmptyLoginOrPassword = errors.New("Login or password is empty")
-	LoginAlreadyExists   = errors.New("Login already exists")
-	WrongLoginOrPassword = errors.New("Wrong login or password")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrEmptyLoginOrPassword = errors.New("login or password is empty")
+	ErrLoginAlreadyExists   = errors.New("login already exists")
+	ErrWrongLoginOrPassword = errors.New("wrong login or password")
 
-	TokenExpired  = errors.New("JWT expired")
-	TokenNotFound = errors.New("Token not found in headers")
-	TokenInvalid  = errors.New("Invalid token")
+	ErrTokenExpired  = errors.New("jwt expired")
+	ErrTokenNotFound = errors.New("token not found in headers")
+	ErrTokenInvalid  = errors.New("invalid token")
 
-	EmptyContextUser = errors.New("User info not found in context")
+	ErrEmptyContextUser = errors.New("User info not found in context")
 
-	OrderNotFound                   = errors.New("Order not uploaded yet")
-	OrderAlreadyUploadedByOtherUser = errors.New("Order already uploaded by other user")
-	OrderAlreadyUploadedByThisUser  = errors.New("Order already uploaded by this user")
-	OrderIsNotValid                 = errors.New("Order is not valid")
+	ErrOrderNotFound                   = errors.New("order not uploaded yet")
+	ErrOrderAlreadyUploadedByOtherUser = errors.New("order already uploaded by other user")
+	ErrOrderAlreadyUploadedByThisUser  = errors.New("order already uploaded by this user")
+	ErrOrderIsNotValid                 = errors.New("order is not valid")
 
-	BalanceInsufficient = errors.New("Not enough points on balance")
+	ErrBalanceInsufficient = errors.New("not enough points on balance")
 
-	WithdrawalAlreadyProcessed = errors.New("This withdraw already was processed")
-	WithdrawalsNotFound        = errors.New("Withdrawals not found")
+	ErrWithdrawalAlreadyProcessed = errors.New("this withdraw already was processed")
+	ErrWithdrawalsNotFound        = errors.New("withdrawals not found")
+
+	ErrUnexpectedStatusAccrualService = errors.New("unexpected status code from accrual service")
 )

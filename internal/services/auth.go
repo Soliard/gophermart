@@ -32,14 +32,14 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (string,
 	now := time.Now().UTC()
 	u, err := s.loginner.GetByLogin(ctx, req.Login)
 	if err != nil {
-		if errors.Is(err, errs.UserNotFound) {
-			return "", errs.WrongLoginOrPassword
+		if errors.Is(err, errs.ErrUserNotFound) {
+			return "", errs.ErrWrongLoginOrPassword
 		}
 		return "", err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password))
 	if err != nil {
-		return "", errs.WrongLoginOrPassword
+		return "", errs.ErrWrongLoginOrPassword
 	}
 
 	tokenString, err := s.jwt.GenerateToken(u)

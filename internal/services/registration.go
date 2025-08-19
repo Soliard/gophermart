@@ -26,7 +26,7 @@ func NewRegistrationService(userRepo UserRegistrator) *registrationService {
 
 func (s *registrationService) Register(ctx context.Context, req *dto.RegisterRequest) (*models.User, error) {
 	if req.Login == "" || req.Password == "" {
-		return nil, errs.EmptyLoginOrPassword
+		return nil, errs.ErrEmptyLoginOrPassword
 	}
 
 	exists, err := s.registrator.UserExists(ctx, req.Login)
@@ -34,7 +34,7 @@ func (s *registrationService) Register(ctx context.Context, req *dto.RegisterReq
 		return nil, err
 	}
 	if exists {
-		return nil, errs.LoginAlreadyExists
+		return nil, errs.ErrLoginAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

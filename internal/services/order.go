@@ -28,15 +28,15 @@ func NewOrderService(orderRepository OrderCreator) *orderService {
 
 func (s *orderService) UploadOrder(ctx context.Context, userID, orderNumber string) (*models.Order, error) {
 	order, err := s.creator.GetByNumber(ctx, orderNumber)
-	if err != nil && !errors.Is(err, errs.OrderNotFound) {
+	if err != nil && !errors.Is(err, errs.ErrOrderNotFound) {
 		return nil, err
 	}
 
 	if order != nil {
 		if order.UserID != userID {
-			return nil, errs.OrderAlreadyUploadedByOtherUser
+			return nil, errs.ErrOrderAlreadyUploadedByOtherUser
 		} else {
-			return nil, errs.OrderAlreadyUploadedByThisUser
+			return nil, errs.ErrOrderAlreadyUploadedByThisUser
 		}
 	}
 
