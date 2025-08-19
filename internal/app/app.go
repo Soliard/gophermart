@@ -21,19 +21,20 @@ type App struct {
 }
 
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
-
 	db, err := postgr.NewConnection(ctx, cfg.DatabaseDSN)
 	if err != nil {
 		return nil, err
 	}
 	repoUser := postgr.NewUserRepository(db)
 	repoOrder := postgr.NewOrderRepository(db)
+	repoWithdrawal := postgr.NewWithdrawalRepository(db)
+	repoBalance := postgr.NewBalanceRepository(db)
 
-	services := services.New(repoUser, repoOrder, cfg)
+	services := services.New(repoUser, repoOrder, repoWithdrawal, repoBalance, cfg)
 	handlers := handlers.New(services)
 
-	accuralUpdater := workers.NewAccrualUpdater(services.Accrual, time.Duration(time.Second*10))
-	go accuralUpdater.Start(ctx)
+	accrualUpdater := workers.NewAccrualUpdater(services.Accrual, time.Duration(time.Second*10))
+	go accrualUpdater.Start(ctx)
 
 	return &App{
 		Config:   cfg,
@@ -58,6 +59,8 @@ func (a *App) Router() *chi.Mux {
 			r.Use(middlewares.Authorization(models.RoleUser))
 			r.Post("/api/user/orders", a.Handlers.Order.UploadOrder)
 			r.Get("/api/user/orders", a.Handlers.Order.GetUserOrders)
+			r.Get("/api/user/balance", a.Handlers.Balance.GetBalance)
+			r.Post("/api/user/balance/withdraw", a.Handlers.Withdrawal.ProcessWithdrawal)
 		})
 
 	})

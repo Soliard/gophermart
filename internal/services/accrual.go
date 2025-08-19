@@ -75,7 +75,7 @@ func (s *accrualService) updateOrder(ctx context.Context, number string) error {
 			time.Sleep(time.Second * 60)
 			continue
 		default:
-			return errors.New("Unexpected status code")
+			return errors.New("Unexpected status code from accrual service")
 		}
 
 		var recievedOrder models.Order

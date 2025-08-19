@@ -29,3 +29,11 @@ type JWTServiceInterface interface {
 type AccrualServiceInterface interface {
 	UpdateOrders(ctx context.Context) error
 }
+
+type WithdrawalServiceInterface interface {
+	ProcessWithdraw(ctx context.Context, userID, orderNumber string, sum float64) error
+}
+
+type BalanceServiceInterface interface {
+	GetBalance(ctx context.Context, userID string) (*models.Balance, error)
+}

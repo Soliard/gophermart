@@ -31,7 +31,7 @@ func NewConnection(ctx context.Context, connectionString string) (*sqlx.DB, erro
 var migrationsFS embed.FS
 
 func runMigrations(db *sqlx.DB) error {
-	//exmpl migrate create -ext sql -dir migrations -seq create_metrics_table
+	// migrate create -ext sql -dir migrations -seq create_table
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return err
