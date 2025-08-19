@@ -32,6 +32,7 @@ type AccrualServiceInterface interface {
 
 type WithdrawalServiceInterface interface {
 	ProcessWithdraw(ctx context.Context, userID, orderNumber string, sum float64) error
+	GetWithdrawals(ctx context.Context, userID string) ([]*models.Withdrawal, error)
 }
 
 type BalanceServiceInterface interface {

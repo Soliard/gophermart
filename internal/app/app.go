@@ -61,6 +61,7 @@ func (a *App) Router() *chi.Mux {
 			r.Get("/api/user/orders", a.Handlers.Order.GetUserOrders)
 			r.Get("/api/user/balance", a.Handlers.Balance.GetBalance)
 			r.Post("/api/user/balance/withdraw", a.Handlers.Withdrawal.ProcessWithdrawal)
+			r.Get("/api/user/withdrawals", a.Handlers.Withdrawal.GetWithdrawals)
 		})
 
 	})

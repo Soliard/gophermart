@@ -53,7 +53,7 @@ func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http
 		http.Error(res, "Order number is not valid", http.StatusUnprocessableEntity)
 		return
 
-	case errs.WithdrawAlreadyProcessed:
+	case errs.WithdrawalAlreadyProcessed:
 		log.Warn("Attempt withdrawal order that already has been withdrawed", logger.F.Any("request data", reqData))
 		http.Error(res, "For this order already exists withdrawal", http.StatusAlreadyReported)
 		return
@@ -64,4 +64,39 @@ func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http
 	}
 
 	res.WriteHeader(http.StatusOK)
+}
+
+func (h *withdrawalHandler) GetWithdrawals(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	log := logger.FromContext(ctx)
+
+	userCtx, err := services.GetUserFromContext(ctx)
+	if err != nil {
+		log.Error("Failed to get user context from ctx after authentication", logger.F.Error(err))
+		http.Error(res, "Failed to get user context", http.StatusInternalServerError)
+		return
+	}
+
+	withdrawals, err := h.service.GetWithdrawals(ctx, userCtx.ID)
+	if err != nil {
+		log.Error("Failed to get user withdrawals", logger.F.Error(err), logger.F.Any("user", userCtx))
+		http.Error(res, "Failed to get withdrawals", http.StatusInternalServerError)
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	body, err := json.Marshal(withdrawals)
+	if err != nil {
+		log.Error("Failed to marshal withdrawals", logger.F.Error(err), logger.F.Any("user", userCtx))
+		http.Error(res, "Failed to marshal withdrawals", http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(body)
 }

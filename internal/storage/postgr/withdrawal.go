@@ -30,3 +30,13 @@ func (r *WithdrawalRepository) WithdrawalExists(ctx context.Context, userID stri
 	err := r.db.GetContext(ctx, &exists, query, userID, orderNumber)
 	return exists, err
 }
+
+func (r *WithdrawalRepository) GetWithdrawals(ctx context.Context, userID string) ([]*models.Withdrawal, error) {
+	var withdrawals []*models.Withdrawal
+	query := `SELECT * FROM withdrawals WHERE user_id = $1 ORDER BY processed_at DESC`
+	err := r.db.SelectContext(ctx, &withdrawals, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	return withdrawals, nil
+}

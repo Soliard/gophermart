@@ -10,6 +10,7 @@ import (
 type Withdrawer interface {
 	Create(ctx context.Context, w *models.Withdrawal) error
 	WithdrawalExists(ctx context.Context, userID string, orderNumber string) (bool, error)
+	GetWithdrawals(ctx context.Context, userID string) ([]*models.Withdrawal, error)
 }
 
 type withdrawalService struct {
@@ -37,7 +38,7 @@ func (s *withdrawalService) ProcessWithdraw(ctx context.Context, userID, orderNu
 		return err
 	}
 	if exists {
-		return errs.WithdrawAlreadyProcessed
+		return errs.WithdrawalAlreadyProcessed
 	}
 
 	balance, err := s.balance.GetBalance(ctx, userID)
@@ -55,4 +56,8 @@ func (s *withdrawalService) ProcessWithdraw(ctx context.Context, userID, orderNu
 	}
 
 	return nil
+}
+
+func (s *withdrawalService) GetWithdrawals(ctx context.Context, userID string) ([]*models.Withdrawal, error) {
+	return s.repo.GetWithdrawals(ctx, userID)
 }

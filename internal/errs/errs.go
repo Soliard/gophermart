@@ -21,5 +21,6 @@ var (
 
 	BalanceInsufficient = errors.New("Not enough points on balance")
 
-	WithdrawAlreadyProcessed = errors.New("This withdraw already was processed")
+	WithdrawalAlreadyProcessed = errors.New("This withdraw already was processed")
+	WithdrawalsNotFound        = errors.New("Withdrawals not found")
 )
