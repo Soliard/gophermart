@@ -44,7 +44,7 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 
 	u, err := h.reg.Register(ctx, regData)
 	if err != nil {
-		if errors.Is(err, errs.ErrLoginAlreadyExists) {
+		if errors.Is(err, errs.ErrUserAlreadyExists) {
 			http.Error(res, "User with this login already exists", http.StatusConflict)
 			return
 		}

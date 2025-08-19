@@ -34,7 +34,7 @@ func (s *registrationService) Register(ctx context.Context, req *dto.RegisterReq
 		return nil, err
 	}
 	if exists {
-		return nil, errs.ErrLoginAlreadyExists
+		return nil, errs.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

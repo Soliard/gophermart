@@ -67,6 +67,9 @@ func (s *jwtService) GetClaims(tokenString string) (*UserContext, error) {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, errs.ErrTokenExpired
 		}
+		if errors.Is(err, jwt.ErrSignatureInvalid) {
+			return nil, errs.ErrTokenInvalid
+		}
 		return nil, err
 	}
 
