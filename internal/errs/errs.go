@@ -12,7 +12,7 @@ var (
 	ErrTokenNotFound = errors.New("token not found in headers")
 	ErrTokenInvalid  = errors.New("invalid token")
 
-	ErrEmptyContextUser = errors.New("User info not found in context")
+	ErrEmptyContextUser = errors.New("user info not found in context")
 
 	ErrOrderNotFound                   = errors.New("order not uploaded yet")
 	ErrOrderAlreadyUploadedByOtherUser = errors.New("order already uploaded by other user")
