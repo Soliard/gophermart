@@ -12,12 +12,14 @@ import (
 	"github.com/Soliard/gophermart/internal/storage/postgr"
 	"github.com/Soliard/gophermart/internal/workers"
 	"github.com/go-chi/chi"
+	"github.com/jmoiron/sqlx"
 )
 
 type App struct {
 	Config   *config.Config
 	Handlers *handlers.Handlers
 	Services *services.Services
+	db       *sqlx.DB
 }
 
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
@@ -40,6 +42,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		Config:   cfg,
 		Handlers: handlers,
 		Services: services,
+		db:       db,
 	}, nil
 }
 
@@ -67,4 +70,8 @@ func (a *App) Router() *chi.Mux {
 	})
 
 	return r
+}
+
+func (a *App) Close() error {
+	return a.db.Close()
 }
