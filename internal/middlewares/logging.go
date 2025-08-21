@@ -8,29 +8,25 @@ import (
 	"github.com/google/uuid"
 )
 
-// берём структуру для хранения сведений об ответе
 type responseData struct {
 	status int
 	size   int
 }
 
-// добавляем реализацию http.ResponseWriter
 type loggingResponseWriter struct {
-	http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
-	responseData        *responseData
+	http.ResponseWriter
+	responseData *responseData
 }
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	// записываем ответ, используя оригинальный http.ResponseWriter
 	size, err := r.ResponseWriter.Write(b)
-	r.responseData.size += size // захватываем размер
+	r.responseData.size += size
 	return size, err
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	// записываем код статуса, используя оригинальный http.ResponseWriter
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.status = statusCode // захватываем код статуса
+	r.responseData.status = statusCode
 }
 
 func Logging(next http.Handler) http.Handler {
@@ -38,7 +34,7 @@ func Logging(next http.Handler) http.Handler {
 		start := time.Now()
 		ctx := r.Context()
 		lw := loggingResponseWriter{
-			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
+			ResponseWriter: w,
 			responseData: &responseData{
 				status: 0,
 				size:   0,

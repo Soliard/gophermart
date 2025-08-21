@@ -5,11 +5,11 @@ import (
 )
 
 var (
-	StatusNew        OrderStatus = "NEW"        //заказ новый
-	StatusRegistered OrderStatus = "REGISTERED" //заказ зарегистрирован, но вознаграждение не рассчитано
-	StatusProcessing OrderStatus = "PROCESSING" //расчёт начисления в процессе
-	StatusInvalid    OrderStatus = "INVALID"    //заказ не принят к расчёту, и вознаграждение не будет начислено
-	StatusProcessed  OrderStatus = "PROCESSED"  //расчёт начисления окончен
+	StatusNew        OrderStatus = "NEW"
+	StatusRegistered OrderStatus = "REGISTERED"
+	StatusProcessing OrderStatus = "PROCESSING"
+	StatusInvalid    OrderStatus = "INVALID"
+	StatusProcessed  OrderStatus = "PROCESSED"
 )
 
 type OrderStatus string
