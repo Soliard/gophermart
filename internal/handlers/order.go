@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/Soliard/gophermart/internal/errs"
 	"github.com/Soliard/gophermart/internal/logger"
@@ -25,9 +23,8 @@ func NewOrderHandler(orderService services.OrderServiceInterface) *orderHandler 
 func (h *orderHandler) UploadOrder(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
-	ct := req.Header.Get("Content-Type")
 
-	if !strings.HasPrefix(ct, "text/plain") {
+	if !validateTextContentType(req) {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
@@ -89,18 +86,15 @@ func (h *orderHandler) GetUserOrders(res http.ResponseWriter, req *http.Request)
 		http.Error(res, "Failed to get orders", http.StatusInternalServerError)
 		return
 	}
-	respBody, err := json.Marshal(orders)
-	if err != nil {
-		log.Error("Failed to serialize orders", logger.F.Error(err))
-		http.Error(res, "Failed to create response body", http.StatusInternalServerError)
-		return
-	}
 
 	if len(orders) == 0 {
 		res.WriteHeader(http.StatusNoContent)
 		return
 	}
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(respBody)
+
+	err = handleJSONResponse(res, http.StatusOK, orders)
+	if err != nil {
+		log.Error("Failed to send orders", logger.F.Error(err))
+	}
+
 }

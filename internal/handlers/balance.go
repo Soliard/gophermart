@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/Soliard/gophermart/internal/logger"
@@ -36,14 +35,8 @@ func (h *balanceHandler) GetBalance(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	body, err := json.Marshal(balance)
+	err = handleJSONResponse(res, http.StatusOK, balance)
 	if err != nil {
-		log.Error("Failed to masrshal balance", logger.F.Error(err), logger.F.Any("user", userCtx))
-		http.Error(res, "Failed to masrshal balance", http.StatusInternalServerError)
-		return
+		log.Error("Failed to send balance", logger.F.Error(err), logger.F.Any("user", userCtx))
 	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(body)
 }

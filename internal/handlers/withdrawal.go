@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
@@ -22,9 +21,8 @@ func NewWithdrawalHandler(service services.WithdrawalServiceInterface) *withdraw
 func (h *withdrawalHandler) ProcessWithdrawal(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
-	ct := req.Header.Get("Content-Type")
 
-	if !strings.HasPrefix(ct, "application/json") {
+	if !validateJSONContentType(req) {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
@@ -90,15 +88,8 @@ func (h *withdrawalHandler) GetWithdrawals(res http.ResponseWriter, req *http.Re
 		res.WriteHeader(http.StatusNoContent)
 		return
 	}
-
-	body, err := json.Marshal(withdrawals)
+	err = handleJSONResponse(res, http.StatusOK, withdrawals)
 	if err != nil {
 		log.Error("Failed to marshal withdrawals", logger.F.Error(err), logger.F.Any("user", userCtx))
-		http.Error(res, "Failed to marshal withdrawals", http.StatusInternalServerError)
-		return
 	}
-
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(body)
 }

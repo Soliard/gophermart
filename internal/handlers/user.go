@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/Soliard/gophermart/internal/dto"
 	"github.com/Soliard/gophermart/internal/errs"
@@ -27,9 +26,8 @@ func NewUserHandler(reg services.RegistrationServiceInterface, auth services.Aut
 func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
-	ct := req.Header.Get("Content-Type")
 
-	if !strings.HasPrefix(ct, "application/json") {
+	if !validateJSONContentType(req) {
 		http.Error(res, "Incorrect body format", http.StatusBadRequest)
 		return
 	}
@@ -69,23 +67,18 @@ func (h *userHandler) Register(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Failed to login after registration", http.StatusInternalServerError)
 		return
 	}
-
-	body, err := json.Marshal(u)
+	res.Header().Add("Authorization", token)
+	err = handleJSONResponse(res, http.StatusOK, u)
 	if err != nil {
 		log.Error("Failed to marshal body", logger.F.Error(err))
-		http.Error(res, "Failed response", http.StatusInternalServerError)
-		return
 	}
-	res.Header().Add("Authorization", token)
-	res.WriteHeader(http.StatusOK)
-	res.Write(body)
 }
 
 func (h *userHandler) Login(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	log := logger.FromContext(ctx)
 
-	if req.Header.Get("Content-Type") != "application/json" {
+	if !validateJSONContentType(req) {
 		http.Error(res, "Only application/json is allowed", http.StatusBadRequest)
 		return
 	}
