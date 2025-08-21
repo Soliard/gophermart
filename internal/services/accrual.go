@@ -22,10 +22,16 @@ type AccrualUpdater interface {
 		status models.OrderStatus, accrual *float64) error
 }
 
+type RetryConfig struct {
+	MaxRetries int
+	RetryDelay time.Duration
+}
+
 type accrualService struct {
-	updater AccrualUpdater
-	client  *resty.Client
-	baseURL string
+	updater  AccrualUpdater
+	client   *resty.Client
+	baseURL  string
+	retryCfg RetryConfig
 }
 
 func NewAccrualService(orders AccrualUpdater, accrualURL string) *accrualService {
@@ -33,10 +39,16 @@ func NewAccrualService(orders AccrualUpdater, accrualURL string) *accrualService
 		accrualURL = "http://" + accrualURL
 	}
 
+	retryCfg := RetryConfig{
+		MaxRetries: 3,
+		RetryDelay: time.Second * 60,
+	}
+
 	return &accrualService{
-		updater: orders,
-		client:  resty.New(),
-		baseURL: accrualURL,
+		updater:  orders,
+		client:   resty.New(),
+		baseURL:  accrualURL,
+		retryCfg: retryCfg,
 	}
 }
 
@@ -61,8 +73,7 @@ func (s *accrualService) updateOrder(ctx context.Context, number string) error {
 		return err
 	}
 
-	maxRetries := 3
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := 0; attempt < s.retryCfg.MaxRetries; attempt++ {
 		resp, err := s.client.R().Get(fullURL)
 		if err != nil {
 			return err
@@ -73,7 +84,7 @@ func (s *accrualService) updateOrder(ctx context.Context, number string) error {
 		case http.StatusNoContent:
 			return nil
 		case http.StatusTooManyRequests:
-			time.Sleep(time.Second * 60)
+			time.Sleep(s.retryCfg.RetryDelay)
 			continue
 		default:
 			return errs.ErrUnexpectedStatusAccrualService
